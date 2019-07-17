@@ -54,10 +54,10 @@ function App() {
 	return (
 		<Provider store={store}>
 			<Router>
-				<div className="App">
+				<div className="App" style={{ minHeight: "450px" }}>
 					<Navbar />
 					<Route exact path="/" component={Landing} />
-					<div className="container" style={{ minHeight: "450px" }}>
+					<div className="container">
 						<Route exact path="/register" component={Register} />
 						<Route exact path="/login" component={Login} />
 						<Route exact path="/profiles" component={Profiles} />
