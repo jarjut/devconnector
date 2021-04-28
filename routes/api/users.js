@@ -13,6 +13,9 @@ const validateLoginInput = require("../../validation/login");
 // Load User model
 const User = require("../../models/User");
 
+const access_token_exp = "3h";
+const refresh_token_exp = "1w";
+
 /**
  * @route   GET api/users/test
  * @desc    Test users route
@@ -20,7 +23,7 @@ const User = require("../../models/User");
  */
 router.get("/test", (req, res) =>
 	res.json({
-		msg: "Users Works"
+		msg: "Users Works",
 	})
 );
 
@@ -37,7 +40,7 @@ router.post("/register", (req, res) => {
 		return res.status(400).json(errors);
 	}
 
-	User.findOne({ email: req.body.email }).then(user => {
+	User.findOne({ email: req.body.email }).then((user) => {
 		if (user) {
 			errors.email = "Email already exists";
 			return res.status(400).json(errors);
@@ -45,14 +48,14 @@ router.post("/register", (req, res) => {
 			const avatar = gravatar.url(req.body.email, {
 				s: "200", //Size
 				r: "pg", //Rating
-				d: "mm" //Default
+				d: "mm", //Default
 			});
 
 			const newUser = new User({
 				name: req.body.name,
 				email: req.body.email,
 				avatar,
-				password: req.body.password
+				password: req.body.password,
 			});
 
 			bcrypt.genSalt(10, (err, salt) => {
@@ -61,8 +64,8 @@ router.post("/register", (req, res) => {
 					newUser.password = hash;
 					newUser
 						.save()
-						.then(user => res.json({ user }))
-						.catch(err => console.log(err));
+						.then((user) => res.json({ user }))
+						.catch((err) => console.log(err));
 				});
 			});
 		}
@@ -86,7 +89,7 @@ router.post("/login", (req, res) => {
 	const password = req.body.password;
 
 	//Find user by email
-	User.findOne({ email }).then(user => {
+	User.findOne({ email }).then((user) => {
 		// Check User
 		if (!user) {
 			errors.email = "User not found";
@@ -94,27 +97,62 @@ router.post("/login", (req, res) => {
 		}
 
 		// Check password
-		bcrypt.compare(password, user.password).then(isMatch => {
+		bcrypt.compare(password, user.password).then((isMatch) => {
 			if (isMatch) {
 				//User Matched
 				const payload = { id: user.id, name: user.name, avatar: user.avatar }; // Create JWT Payload
 
 				//Sign Token
-				jwt.sign(
-					payload,
-					keys.secretOrKey,
-					{ expiresIn: 10800 },
-					(err, token) => {
-						res.json({
-							success: true,
-							token: "Bearer " + token
-						});
-					}
-				);
+				const accessToken = jwt.sign(payload, keys.secretOrKey, {
+					expiresIn: access_token_exp,
+				});
+				const refreshToken = jwt.sign(payload, keys.secretOrKey, {
+					expiresIn: refresh_token_exp,
+				});
+
+				return res.json({
+					success: true,
+					access_token: accessToken,
+					refresh_token: refreshToken,
+				});
 			} else {
 				errors.password = "Password incorrect";
 				return res.status(400).json(errors);
 			}
+		});
+	});
+});
+
+/**
+ * @route   POST api/users/token
+ * @desc    Request Token / return JWT Token
+ * @access  public
+ */
+router.get("/token", (req, res) => {
+	const refreshToken = req.header("x-refresh-token");
+	jwt.verify(refreshToken, keys.secretOrKey, (err, decoded) => {
+		if (err) {
+			return res.status(401).json(err);
+		}
+
+		const payload = {
+			id: decoded.id,
+			name: decoded.name,
+			avatar: decoded.avatar,
+		};
+
+		//Sign Token
+		const accessToken = jwt.sign(payload, keys.secretOrKey, {
+			expiresIn: access_token_exp,
+		});
+		const refreshToken = jwt.sign(payload, keys.secretOrKey, {
+			expiresIn: refresh_token_exp,
+		});
+
+		return res.json({
+			success: true,
+			access_token: accessToken,
+			refresh_token: refreshToken,
 		});
 	});
 });
@@ -132,7 +170,7 @@ router.get(
 			id: req.user.id,
 			name: req.user.name,
 			email: req.user.email,
-			avatar: req.user.avatar
+			avatar: req.user.avatar,
 		});
 	}
 );
