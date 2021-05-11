@@ -1,20 +1,16 @@
-import { createStore, applyMiddleware, compose } from "redux";
-import thunk from "redux-thunk";
-import rootReducer from "./reducers";
+import { configureStore } from "@reduxjs/toolkit";
+import { authSlice } from "./slices/authSlice";
+import { errorSlice } from "./slices/errorSlice";
+import { postSlice } from "./slices/postSlice";
+import { profileSlice } from "./slices/profileSlice";
 
-const initialState = {};
-
-const middleware = [thunk];
-
-const store = createStore(
-	rootReducer,
-	initialState,
-	compose(
-		applyMiddleware(...middleware),
-		(window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ &&
-			window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__()) ||
-			compose
-	)
-);
+const store = configureStore({
+	reducer: {
+		auth: authSlice.reducer,
+		errors: errorSlice.reducer,
+		profile: profileSlice.reducer,
+		post: postSlice.reducer,
+	},
+});
 
 export default store;

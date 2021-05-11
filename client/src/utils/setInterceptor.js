@@ -1,6 +1,6 @@
 import axios from "axios";
-import { logoutUser } from "../actions/authActions";
-import { clearCurrentProfile } from "../actions/profileAction";
+import { logoutUser } from "../slices/authSlice";
+import { clearCurrentProfile } from "../slices/profileSlice";
 import store from "../store";
 
 const setInterceptor = (history = null) => {
